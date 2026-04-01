@@ -342,7 +342,7 @@ if (isEligiblePage()) {
         const color = diff > 0 ? "green" : "red";
         changeText = ` <span style="color: ${color};">${sign}${diff}</span>`;
       } else {
-        changeText = ` <span style="color: grey;">${formatValue(prevValue, stat.type)}</span>`;
+        changeText = ` ← <span style="color: grey;">${formatValue(prevValue, stat.type)}</span>`;
       }
     }
 
