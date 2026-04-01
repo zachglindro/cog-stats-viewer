@@ -323,7 +323,7 @@ if (isEligiblePage()) {
   `;
 
     const label = document.createElement("div");
-    label.textContent = `${stat.scope}: ${stat.key}`;
+    label.innerHTML = `${stat.key} <span style="font-weight: normal; color: grey;">${stat.scope === 'permanent' ? 'P' : 'T'}</span>`;
     label.style.fontWeight = "bold";
     if (isRecentChange) label.style.background = "#f0fff0";
 
