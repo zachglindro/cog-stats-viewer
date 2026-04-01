@@ -337,7 +337,7 @@ if (isEligiblePage()) {
   function createStatItem(stat) {
     const item = document.createElement("div");
     const key = `${stat.scope}:${stat.key}`;
-    const isRecentChange = currentPollChanges.has(key);
+    const isRecentChange = recentlyChanged.has(key);
     item.style.cssText = `
     margin-bottom: 10px;
     padding: 5px;
