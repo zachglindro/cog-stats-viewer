@@ -224,7 +224,11 @@ if (isEligiblePage()) {
     if (currentScope === "all" || currentScope === "permanent") {
       filteredStats.push(
         ...statsData.permanent
-          .filter((stat) => stat.key.toLowerCase().includes(lowerTerm))
+          .filter(
+            (stat) =>
+              stat.key.toLowerCase().includes(lowerTerm) &&
+              !stat.key.startsWith("_"),
+          )
           .map((stat) => ({ ...stat, scope: "permanent" })),
       );
     }
@@ -232,7 +236,11 @@ if (isEligiblePage()) {
     if (currentScope === "all" || currentScope === "temporary") {
       filteredStats.push(
         ...statsData.temps
-          .filter((stat) => stat.key.toLowerCase().includes(lowerTerm))
+          .filter(
+            (stat) =>
+              stat.key.toLowerCase().includes(lowerTerm) &&
+              !stat.key.startsWith("_"),
+          )
           .map((stat) => ({ ...stat, scope: "temporary" })),
       );
     }
