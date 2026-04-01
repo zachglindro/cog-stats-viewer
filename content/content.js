@@ -33,7 +33,8 @@ if (isEligiblePage()) {
   let currentSort = "modified-desc"; // name-asc, name-desc, modified-asc, modified-desc
   let previousStatsData = { permanent: [], temps: [] };
   let changeIndicators = new Map(); // key: scope:key, value: {from: value, type: type, timestamp: number}
-  let recentlyChanged = new Set(); // keys that changed in the most recent poll
+  let recentlyChanged = new Set(); // keys that changed in the current session
+  let currentPollChanges = new Set(); // keys that changed in the most recent poll
 
   // Debounce function
   function debounce(func, wait) {
@@ -117,6 +118,7 @@ if (isEligiblePage()) {
     <option value="all">All Stats</option>
     <option value="permanent">Permanent</option>
     <option value="temporary">Temporary</option>
+    <option value="recently">Recently Modified</option>
   `;
     scopeSelect.onchange = () => {
       currentScope = scopeSelect.value;
@@ -247,6 +249,29 @@ if (isEligiblePage()) {
       );
     }
 
+    if (currentScope === "recently") {
+      filteredStats.push(
+        ...statsData.permanent
+          .filter(
+            (stat) =>
+              stat.key.toLowerCase().includes(lowerTerm) &&
+              !stat.key.startsWith("_") &&
+              recentlyChanged.has(`permanent:${stat.key}`),
+          )
+          .map((stat) => ({ ...stat, scope: "permanent" })),
+      );
+      filteredStats.push(
+        ...statsData.temps
+          .filter(
+            (stat) =>
+              stat.key.toLowerCase().includes(lowerTerm) &&
+              !stat.key.startsWith("_") &&
+              recentlyChanged.has(`temporary:${stat.key}`),
+          )
+          .map((stat) => ({ ...stat, scope: "temporary" })),
+      );
+    }
+
     // Sort filtered stats
     filteredStats.sort((a, b) => {
       if (currentSort === "name-asc") {
@@ -312,7 +337,7 @@ if (isEligiblePage()) {
   function createStatItem(stat) {
     const item = document.createElement("div");
     const key = `${stat.scope}:${stat.key}`;
-    const isRecentChange = recentlyChanged.has(key);
+    const isRecentChange = currentPollChanges.has(key);
     item.style.cssText = `
     margin-bottom: 10px;
     padding: 5px;
@@ -323,7 +348,7 @@ if (isEligiblePage()) {
   `;
 
     const label = document.createElement("div");
-    label.innerHTML = `${stat.key} <span style="font-weight: normal; color: grey;">${stat.scope === 'permanent' ? 'P' : 'T'}</span>`;
+    label.innerHTML = `${stat.key} <span style="font-weight: normal; color: grey;">${stat.scope === "permanent" ? "P" : "T"}</span>`;
     label.style.fontWeight = "bold";
     if (isRecentChange) label.style.background = "#f0fff0";
 
@@ -396,7 +421,7 @@ if (isEligiblePage()) {
         console.error("Stats error:", error);
         return;
       }
-      recentlyChanged.clear(); // Clear previous recent changes
+      currentPollChanges.clear(); // Clear current poll changes
       const newPermanent = permanent || [];
       const newTemps = temps || [];
 
@@ -443,6 +468,7 @@ if (isEligiblePage()) {
             timestamp: Date.now(),
           });
           recentlyChanged.add(key);
+          currentPollChanges.add(key);
         }
       });
 
@@ -457,6 +483,7 @@ if (isEligiblePage()) {
             timestamp: Date.now(),
           });
           recentlyChanged.add(key);
+          currentPollChanges.add(key);
         }
       });
 
