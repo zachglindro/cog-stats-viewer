@@ -1,0 +1,67 @@
+/* Content styles for Choice of Games Stats Modifier */
+
+#cog-modifier-panel {
+  font-family: 'Georgia', serif;
+  color: #333;
+  background: #f5f5f5;
+  box-shadow: -2px 0 5px rgba(0,0,0,0.3);
+}
+
+body.nightmode #cog-modifier-panel {
+  background: #333;
+  color: #ccc;
+}
+
+body.whitemode #cog-modifier-panel {
+  background: #fff;
+  color: #333;
+}
+
+#cog-modifier-panel h3 {
+  margin: 0;
+  font-size: 1.2em;
+}
+
+#cog-modifier-panel button {
+  background: #ddd;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+body.nightmode #cog-modifier-panel button {
+  background: #555;
+  color: #ccc;
+}
+
+#cog-modifier-panel select,
+#cog-modifier-panel input {
+  padding: 5px;
+  border: 1px solid #ccc;
+  background: white;
+  color: #333;
+}
+
+body.nightmode #cog-modifier-panel select,
+body.nightmode #cog-modifier-panel input {
+  background: #444;
+  color: #ccc;
+}
+
+#cog-stats-list div {
+  border-color: #ddd;
+  background: white;
+}
+
+body.nightmode #cog-stats-list div {
+  border-color: #666;
+  background: #444;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  #cog-modifier-panel {
+    width: 100vw !important;
+    left: 0 !important;
+  }
+}

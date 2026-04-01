@@ -1,0 +1,16 @@
+{
+  "name": "stats-modifier",
+  "version": "1.0.0",
+  "description": "A Firefox extension that adds a stats modifier panel to Choice of Games pages, allowing you to view and edit permanent and temporary variables in the game.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "eslint": "^10.1.0"
+  }
+}
