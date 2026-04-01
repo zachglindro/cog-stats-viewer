@@ -32,6 +32,7 @@ if (isEligiblePage()) {
   let pollingInterval = null;
   let currentSort = "modified-desc"; // name-asc, name-desc, modified-asc, modified-desc
   let previousStatsData = { permanent: [], temps: [] };
+  let changeIndicators = new Map(); // key: scope:key, value: {from: value, type: type}
 
   // Debounce function
   function debounce(func, wait) {
@@ -335,14 +336,16 @@ if (isEligiblePage()) {
 
     // Compute change indicator
     let changeText = "";
-    if (prevValue !== null && prevValue !== stat.value) {
-      if (typeof stat.value === "number" && typeof prevValue === "number") {
-        const diff = stat.value - prevValue;
+    const key = `${stat.scope}:${stat.key}`;
+    if (changeIndicators.has(key)) {
+      const change = changeIndicators.get(key);
+      if (typeof stat.value === "number" && typeof change.from === "number") {
+        const diff = stat.value - change.from;
         const sign = diff > 0 ? "+" : "";
         const color = diff > 0 ? "green" : "red";
         changeText = ` <span style="color: ${color};">${sign}${diff}</span>`;
       } else {
-        changeText = ` ← <span style="color: grey;">${formatValue(prevValue, stat.type)}</span>`;
+        changeText = ` ← <span style="color: grey;">${formatValue(change.from, change.type)}</span>`;
       }
     }
 
@@ -418,6 +421,26 @@ if (isEligiblePage()) {
           stat.lastModified = now;
         } else {
           stat.lastModified = prev.lastModified || now;
+        }
+      });
+
+      // Update change indicators for permanent stats
+      newPermanent.forEach((stat) => {
+        const key = `permanent:${stat.key}`;
+        const prev = previousStatsData.permanent.find(
+          (p) => p.key === stat.key,
+        );
+        if (prev && prev.value !== stat.value) {
+          changeIndicators.set(key, { from: prev.value, type: prev.type });
+        }
+      });
+
+      // Update change indicators for temporary stats
+      newTemps.forEach((stat) => {
+        const key = `temporary:${stat.key}`;
+        const prev = previousStatsData.temps.find((p) => p.key === stat.key);
+        if (prev && prev.value !== stat.value) {
+          changeIndicators.set(key, { from: prev.value, type: prev.type });
         }
       });
 
