@@ -55,7 +55,7 @@ if (isEligiblePage()) {
     modifierButton.id = "cog-modifier-button";
     modifierButton.className = "spacedLink";
     modifierButton.textContent = "Modifier";
-    modifierButton.onclick = togglePanel;
+    modifierButton.addEventListener("click", togglePanel);
 
     buttonsDiv.appendChild(modifierButton);
   }
@@ -440,4 +440,34 @@ if (isEligiblePage()) {
   // Initialize
   injectButton();
   createPanel();
+
+  // Watch for DOM changes that might remove the button
+  const observer = new MutationObserver((mutations) => {
+    const buttonsDiv = document.getElementById("buttons");
+    const button = document.getElementById("cog-modifier-button");
+    if (button) {
+      // Re-bind the event listener in case the element was replaced
+      button.addEventListener("click", togglePanel);
+    } else if (buttonsDiv) {
+      injectButton();
+    }
+    const panel = document.getElementById("cog-modifier-panel");
+    if (!panel) {
+      createPanel();
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  // Also poll every second to ensure button is present
+  setInterval(() => {
+    const buttonsDiv = document.getElementById("buttons");
+    const button = document.getElementById("cog-modifier-button");
+    if (buttonsDiv && !button) {
+      injectButton();
+    }
+  }, 1000);
 }
