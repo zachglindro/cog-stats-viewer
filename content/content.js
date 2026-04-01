@@ -34,6 +34,7 @@ if (isEligiblePage()) {
   let previousStatsData = { permanent: [], temps: [] };
   let changeIndicators = new Map(); // key: scope:key, value: {from: value, type: type, timestamp: number}
   let recentlyChanged = new Set(); // keys that changed in the current session
+  let highlightedStats = new Set(); // keys to highlight in the UI
   let currentPollChanges = new Set(); // keys that changed in the most recent poll
 
   // Debounce function
@@ -96,6 +97,15 @@ if (isEligiblePage()) {
     title.textContent = "Stats Modifier";
     title.style.margin = "0";
 
+    const buttonDiv = document.createElement("div");
+    buttonDiv.style.cssText = "display: flex; gap: 5px;";
+
+    const moveBtn = document.createElement("button");
+    moveBtn.textContent = "Move to Tab";
+    moveBtn.onclick = () => {
+      chrome.runtime.sendMessage({ type: "openModifierTab" });
+    };
+
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "×";
     closeBtn.onclick = () => {
@@ -103,8 +113,11 @@ if (isEligiblePage()) {
       stopPolling();
     };
 
+    buttonDiv.appendChild(moveBtn);
+    buttonDiv.appendChild(closeBtn);
+
     header.appendChild(title);
-    header.appendChild(closeBtn);
+    header.appendChild(buttonDiv);
 
     // Controls
     const controls = document.createElement("div");
@@ -328,7 +341,7 @@ if (isEligiblePage()) {
   function createStatItem(stat) {
     const item = document.createElement("div");
     const key = `${stat.scope}:${stat.key}`;
-    const isRecentChange = recentlyChanged.has(key);
+    const isRecentChange = highlightedStats.has(key);
     item.style.cssText = `
     margin-bottom: 10px;
     padding: 5px;
@@ -413,6 +426,7 @@ if (isEligiblePage()) {
         return;
       }
       currentPollChanges.clear(); // Clear current poll changes
+      highlightedStats.clear(); // Clear old highlights
       const newPermanent = permanent || [];
       const newTemps = temps || [];
 
@@ -459,6 +473,7 @@ if (isEligiblePage()) {
             timestamp: Date.now(),
           });
           recentlyChanged.add(key);
+          highlightedStats.add(key);
           currentPollChanges.add(key);
         }
       });
@@ -474,6 +489,7 @@ if (isEligiblePage()) {
             timestamp: Date.now(),
           });
           recentlyChanged.add(key);
+          highlightedStats.add(key);
           currentPollChanges.add(key);
         }
       });
@@ -485,12 +501,20 @@ if (isEligiblePage()) {
         renderedCount = 0;
         filterStats();
       }
+      // Send to background for modifier tab
+      chrome.runtime.sendMessage({
+        type: "statsResponse",
+        permanent: newPermanent,
+        temps: newTemps,
+      });
     } else if (type === "setResponse") {
       if (success) {
         loadStats(); // Refresh
       } else {
         alert("Failed to set stat: " + error);
       }
+      // Send to background for modifier tab
+      chrome.runtime.sendMessage({ type: "setResponse", success, error });
     }
   });
 
@@ -527,4 +551,26 @@ if (isEligiblePage()) {
       injectButton();
     }
   }, 1000);
+
+  // Listen for background messages
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === "hidePanel") {
+      const panel = document.getElementById("cog-modifier-panel");
+      if (panel) {
+        panel.style.display = "none";
+        stopPolling();
+      }
+    } else if (message.type === "showPanel") {
+      const panel = document.getElementById("cog-modifier-panel");
+      if (panel) {
+        panel.style.display = "flex";
+        startPolling();
+      }
+    } else if (message.type === "getStats") {
+      loadStats();
+    } else if (message.type === "setStat") {
+      // Forward to bridge
+      window.postMessage({ type: "setStat", data: message.data }, "*");
+    }
+  });
 }
