@@ -19,6 +19,7 @@ let changeIndicators = new Map(); // key: scope:key, value: {from: value, type: 
 let recentlyChanged = new Set(); // keys that changed in the current session
 let highlightedStats = new Set(); // keys to highlight in the UI
 let currentPollChanges = new Set(); // keys that changed in the most recent poll
+let pinnedStats = new Set(); // set of "scope:key"
 
 // Debounce function
 function debounce(func, wait) {
@@ -31,6 +32,11 @@ function debounce(func, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
+}
+
+// Save pins to storage
+function savePins() {
+  chrome.storage.local.set({ pinnedStats: Array.from(pinnedStats) });
 }
 
 // Start polling
@@ -60,51 +66,65 @@ function filterStats(term = searchTerm) {
   const lowerTerm = term.toLowerCase();
   filteredStats = [];
 
-  if (currentScope === "all" || currentScope === "permanent") {
-    filteredStats.push(
-      ...statsData.permanent
-        .filter(
-          (stat) =>
-            stat.key.toLowerCase().includes(lowerTerm) &&
-            !stat.key.startsWith("_"),
-        )
-        .map((stat) => ({ ...stat, scope: "permanent" })),
+  if (currentScope === "pins") {
+    // Include all pinned stats from both permanent and temporary
+    const allStats = [
+      ...statsData.permanent.map((stat) => ({ ...stat, scope: "permanent" })),
+      ...statsData.temps.map((stat) => ({ ...stat, scope: "temporary" })),
+    ];
+    filteredStats = allStats.filter(
+      (stat) =>
+        stat.key.toLowerCase().includes(lowerTerm) &&
+        !stat.key.startsWith("_") &&
+        pinnedStats.has(`${stat.scope}:${stat.key}`),
     );
-  }
+  } else {
+    if (currentScope === "all" || currentScope === "permanent") {
+      filteredStats.push(
+        ...statsData.permanent
+          .filter(
+            (stat) =>
+              stat.key.toLowerCase().includes(lowerTerm) &&
+              !stat.key.startsWith("_"),
+          )
+          .map((stat) => ({ ...stat, scope: "permanent" })),
+      );
+    }
 
-  if (currentScope === "all" || currentScope === "temporary") {
-    filteredStats.push(
-      ...statsData.temps
-        .filter(
-          (stat) =>
-            stat.key.toLowerCase().includes(lowerTerm) &&
-            !stat.key.startsWith("_"),
-        )
-        .map((stat) => ({ ...stat, scope: "temporary" })),
-    );
-  }
+    if (currentScope === "all" || currentScope === "temporary") {
+      filteredStats.push(
+        ...statsData.temps
+          .filter(
+            (stat) =>
+              stat.key.toLowerCase().includes(lowerTerm) &&
+              !stat.key.startsWith("_"),
+          )
+          .map((stat) => ({ ...stat, scope: "temporary" })),
+      );
+    }
 
-  if (currentScope === "recently") {
-    filteredStats.push(
-      ...statsData.permanent
-        .filter(
-          (stat) =>
-            stat.key.toLowerCase().includes(lowerTerm) &&
-            !stat.key.startsWith("_") &&
-            recentlyChanged.has(`permanent:${stat.key}`),
-        )
-        .map((stat) => ({ ...stat, scope: "permanent" })),
-    );
-    filteredStats.push(
-      ...statsData.temps
-        .filter(
-          (stat) =>
-            stat.key.toLowerCase().includes(lowerTerm) &&
-            !stat.key.startsWith("_") &&
-            recentlyChanged.has(`temporary:${stat.key}`),
-        )
-        .map((stat) => ({ ...stat, scope: "temporary" })),
-    );
+    if (currentScope === "recently") {
+      filteredStats.push(
+        ...statsData.permanent
+          .filter(
+            (stat) =>
+              stat.key.toLowerCase().includes(lowerTerm) &&
+              !stat.key.startsWith("_") &&
+              recentlyChanged.has(`permanent:${stat.key}`),
+          )
+          .map((stat) => ({ ...stat, scope: "permanent" })),
+      );
+      filteredStats.push(
+        ...statsData.temps
+          .filter(
+            (stat) =>
+              stat.key.toLowerCase().includes(lowerTerm) &&
+              !stat.key.startsWith("_") &&
+              recentlyChanged.has(`temporary:${stat.key}`),
+          )
+          .map((stat) => ({ ...stat, scope: "temporary" })),
+      );
+    }
   }
 
   // Sort filtered stats
@@ -120,6 +140,17 @@ function filterStats(term = searchTerm) {
     }
     return 0;
   });
+
+  // Move pinned stats to the top (except for pins scope, which are already only pinned)
+  if (currentScope !== "pins") {
+    const pinned = filteredStats.filter((stat) =>
+      pinnedStats.has(`${stat.scope}:${stat.key}`),
+    );
+    const unpinned = filteredStats.filter(
+      (stat) => !pinnedStats.has(`${stat.scope}:${stat.key}`),
+    );
+    filteredStats = [...pinned, ...unpinned];
+  }
 
   renderedCount = 0;
   renderStats();
@@ -222,14 +253,31 @@ function createStatItem(stat) {
   editBtn.textContent = "Edit";
   editBtn.onclick = () => editStat(stat);
 
+  const pinBtn = document.createElement("button");
+  pinBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="${pinnedStats.has(key) ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+  pinBtn.style.marginLeft = "5px";
+  pinBtn.title = pinnedStats.has(key) ? "Unpin" : "Pin";
+  pinBtn.onclick = () => {
+    if (pinnedStats.has(key)) {
+      pinnedStats.delete(key);
+    } else {
+      pinnedStats.add(key);
+    }
+    savePins();
+    pinBtn
+      .querySelector("svg")
+      .setAttribute("fill", pinnedStats.has(key) ? "currentColor" : "none");
+    pinBtn.title = pinnedStats.has(key) ? "Unpin" : "Pin";
+    filterStats(); // Re-filter and re-sort to update list
+  };
+
   item.appendChild(label);
   item.appendChild(valueDisplay);
   item.appendChild(editBtn);
+  item.appendChild(pinBtn);
 
   return item;
 }
-
-// Edit stat
 function editStat(stat) {
   const newValue = prompt(`Edit ${stat.key} (${stat.type}):`, stat.value);
   if (newValue === null) return;
@@ -349,7 +397,13 @@ document.getElementById("sort-select").onchange = () => {
   filterStats();
 };
 
+document.getElementById("scope-select").value = currentScope;
 document.getElementById("sort-select").value = currentSort;
+
+// Load pinned stats from storage
+chrome.storage.local.get(["pinnedStats"], (result) => {
+  pinnedStats = new Set(result.pinnedStats || []);
+});
 
 const debouncedFilter = debounce(
   () => filterStats(document.getElementById("search-input").value),
