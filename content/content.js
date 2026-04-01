@@ -30,6 +30,8 @@ if (isEligiblePage()) {
   const CHUNK_SIZE = 50;
   let lastStatsHash = null;
   let pollingInterval = null;
+  let currentSort = "modified-desc"; // name-asc, name-desc, modified-asc, modified-desc
+  let previousStatsData = { permanent: [], temps: [] };
 
   // Debounce function
   function debounce(func, wait) {
@@ -120,6 +122,20 @@ if (isEligiblePage()) {
       filterStats();
     };
 
+    const sortSelect = document.createElement("select");
+    sortSelect.innerHTML = `
+    <option value="name-asc">Name (A-Z)</option>
+    <option value="name-desc">Name (Z-A)</option>
+    <option value="modified-desc">Last Modified (newest)</option>
+    <option value="modified-asc">Last Modified (oldest)</option>
+  `;
+    sortSelect.value = currentSort;
+    sortSelect.onchange = () => {
+      currentSort = sortSelect.value;
+      renderedCount = 0;
+      filterStats();
+    };
+
     const searchInput = document.createElement("input");
     searchInput.type = "text";
     searchInput.placeholder = "Search stats...";
@@ -143,6 +159,7 @@ if (isEligiblePage()) {
   `;
 
     controls.appendChild(scopeSelect);
+    controls.appendChild(sortSelect);
     controls.appendChild(refreshBtn);
     controls.appendChild(searchInput);
 
@@ -219,6 +236,20 @@ if (isEligiblePage()) {
           .map((stat) => ({ ...stat, scope: "temporary" })),
       );
     }
+
+    // Sort filtered stats
+    filteredStats.sort((a, b) => {
+      if (currentSort === "name-asc") {
+        return a.key.localeCompare(b.key);
+      } else if (currentSort === "name-desc") {
+        return b.key.localeCompare(a.key);
+      } else if (currentSort === "modified-desc") {
+        return (b.lastModified || 0) - (a.lastModified || 0);
+      } else if (currentSort === "modified-asc") {
+        return (a.lastModified || 0) - (b.lastModified || 0);
+      }
+      return 0;
+    });
 
     renderedCount = 0;
     renderStats();
@@ -319,7 +350,40 @@ if (isEligiblePage()) {
         console.error("Stats error:", error);
         return;
       }
-      statsData = { permanent: permanent || [], temps: temps || [] };
+      const newPermanent = permanent || [];
+      const newTemps = temps || [];
+
+      const now = Date.now();
+
+      // Update lastModified for permanent stats
+      newPermanent.forEach((stat) => {
+        const prev = previousStatsData.permanent.find(
+          (p) => p.key === stat.key,
+        );
+        if (!prev || prev.value !== stat.value) {
+          stat.lastModified = now;
+        } else {
+          stat.lastModified = prev.lastModified || now;
+        }
+      });
+
+      // Update lastModified for temporary stats
+      newTemps.forEach((stat) => {
+        const prev = previousStatsData.temps.find((p) => p.key === stat.key);
+        if (!prev || prev.value !== stat.value) {
+          stat.lastModified = now;
+        } else {
+          stat.lastModified = prev.lastModified || now;
+        }
+      });
+
+      // Update previous data
+      previousStatsData = {
+        permanent: newPermanent.map((s) => ({ ...s })),
+        temps: newTemps.map((s) => ({ ...s })),
+      };
+
+      statsData = { permanent: newPermanent, temps: newTemps };
       const newHash = JSON.stringify(statsData);
       if (newHash !== lastStatsHash) {
         lastStatsHash = newHash;
