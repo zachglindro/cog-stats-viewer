@@ -28,6 +28,8 @@ if (isEligiblePage()) {
   let searchTerm = "";
   let renderedCount = 0;
   const CHUNK_SIZE = 50;
+  let lastStatsHash = null;
+  let pollingInterval = null;
 
   // Debounce function
   function debounce(func, wait) {
@@ -91,7 +93,10 @@ if (isEligiblePage()) {
 
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "×";
-    closeBtn.onclick = () => (panel.style.display = "none");
+    closeBtn.onclick = () => {
+      panel.style.display = "none";
+      stopPolling();
+    };
 
     header.appendChild(title);
     header.appendChild(closeBtn);
@@ -159,6 +164,23 @@ if (isEligiblePage()) {
     return panel;
   }
 
+  function startPolling() {
+    if (pollingInterval) return; // already polling
+    pollingInterval = setInterval(() => {
+      const panel = document.getElementById("cog-modifier-panel");
+      if (panel && panel.style.display !== "none") {
+        loadStats();
+      }
+    }, 1000);
+  }
+
+  function stopPolling() {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+    }
+  }
+
   function togglePanel() {
     const panel = document.getElementById("cog-modifier-panel");
     if (!panel) return;
@@ -166,8 +188,10 @@ if (isEligiblePage()) {
     if (panel.style.display === "none" || !panel.style.display) {
       loadStats();
       panel.style.display = "flex";
+      startPolling();
     } else {
       panel.style.display = "none";
+      stopPolling();
     }
   }
 
@@ -296,8 +320,12 @@ if (isEligiblePage()) {
         return;
       }
       statsData = { permanent: permanent || [], temps: temps || [] };
-      renderedCount = 0;
-      filterStats();
+      const newHash = JSON.stringify(statsData);
+      if (newHash !== lastStatsHash) {
+        lastStatsHash = newHash;
+        renderedCount = 0;
+        filterStats();
+      }
     } else if (type === "setResponse") {
       if (success) {
         loadStats(); // Refresh
