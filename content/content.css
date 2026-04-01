@@ -1,10 +1,10 @@
 /* Content styles for Choice of Games Stats Modifier */
 
 #cog-modifier-panel {
-  font-family: 'Georgia', serif;
+  font-family: "Georgia", serif;
   color: #333;
   background: #f5f5f5;
-  box-shadow: -2px 0 5px rgba(0,0,0,0.3);
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
 }
 
 body.nightmode #cog-modifier-panel {

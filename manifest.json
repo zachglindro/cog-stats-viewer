@@ -3,9 +3,7 @@
   "name": "Choice of Games Stats Modifier",
   "version": "1.0",
   "description": "Add a stats modifier panel to Choice of Games pages",
-  "permissions": [
-    "activeTab"
-  ],
+  "permissions": ["activeTab"],
   "content_scripts": [
     {
       "matches": [
