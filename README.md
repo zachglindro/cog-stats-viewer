@@ -2,50 +2,29 @@
 
 A Firefox extension that adds a stats modifier panel to Choice of Games pages, allowing you to view and edit permanent and temporary variables in the game.
 
+- Real-time stat viewing and editing
+- Search and filter capabilities
+- Pin important stats for quick access
+- Change tracking with visual indicators
+- Responsive design for desktop and mobile
+
 ## Installation
 
-1. Download or clone this repository.
-2. Open Firefox and go to `about:debugging`.
-3. Click "This Firefox" in the left sidebar.
-4. Click "Load Temporary Add-on".
-5. Select the `manifest.json` file from this directory.
-6. The extension will be loaded temporarily.
+1. Download or clone this repository to your local machine
+2. Open Firefox and navigate to `about:debugging`
+3. Click "This Firefox" in the left sidebar
+4. Click "Load Temporary Add-on"
+5. Select the `manifest.json` file from the project directory
 
-Note: For permanent installation, you would need to package it as an .xpi file, but for development, temporary loading is fine.
+The extension will be loaded temporarily. For permanent installation, package it as an .xpi file.
 
-## Supported Sites
-
-- https://www.choiceofgames.com/game-name/
-- https://www.choiceofgames.com/user-contributed/game-name/
 
 ## Usage
 
-1. Navigate to a supported Choice of Games page.
-2. Click the "Modifier" button next to the "Show Stats" button.
-3. The panel will open on the right side (or full screen on mobile).
-4. Use the dropdown to filter by All Stats, Permanent, or Temporary.
-5. Use the search box to find specific stats.
-6. Click "Edit" on any stat to change its value.
-7. Changes are applied immediately to the game.
-
-## Features
-
-- View all permanent and temporary stats
-- Search and filter stats (debounced for performance)
-- Edit values with type preservation
-- Incremental loading for large stat lists (50 at a time)
-- Responsive design for desktop and mobile
-- Seamless integration with site styling (nightmode/whitemode support)
-- Refresh button to reload stats
-
-## Development
-
-- Manifest V3 for modern Firefox
-- Content script injects a page bridge to access game state
-- No external dependencies
-
-## Notes
-
-- Only works on Choice of Games pages
-- Requires the game to have loaded (stats object available)
-- Temporary add-on will be unloaded when Firefox restarts
+1. Navigate to any Choice of Games page (e.g., `https://www.choiceofgames.com/game-name/`)
+2. Look for the "Modifier" button next to the game's control buttons
+3. Click the button to open the stats panel on the right side of the page
+4. Use the dropdown menus to filter stats by type (All, Permanent, Temporary, Recently Modified, or Pins)
+5. Use the search box to find specific stats by name
+6. Click "Edit" next to any stat to modify its value
+7. Changes are applied immediately to the running game
