@@ -293,6 +293,12 @@ if (isEligiblePage()) {
     }
   }
 
+  // Helper function to format stat values for display
+  function formatValue(value, type) {
+    if (type === "string") return `"${value}"`;
+    return value;
+  }
+
   function createStatItem(stat) {
     const item = document.createElement("div");
     item.style.cssText = `
@@ -308,7 +314,31 @@ if (isEligiblePage()) {
     label.style.fontWeight = "bold";
 
     const valueDisplay = document.createElement("div");
-    valueDisplay.textContent = `Value: ${stat.value} (${stat.type})`;
+
+    // Find previous value
+    let prevValue = null;
+    if (stat.scope === "permanent") {
+      const prev = previousStatsData.permanent.find((p) => p.key === stat.key);
+      if (prev) prevValue = prev.value;
+    } else {
+      const prev = previousStatsData.temps.find((p) => p.key === stat.key);
+      if (prev) prevValue = prev.value;
+    }
+
+    // Compute change indicator
+    let changeText = "";
+    if (prevValue !== null && prevValue !== stat.value) {
+      if (typeof stat.value === "number" && typeof prevValue === "number") {
+        const diff = stat.value - prevValue;
+        const sign = diff > 0 ? "+" : "";
+        const color = diff > 0 ? "green" : "red";
+        changeText = ` <span style="color: ${color};">${sign}${diff}</span>`;
+      } else {
+        changeText = ` <span style="color: grey;">${formatValue(prevValue, stat.type)}</span>`;
+      }
+    }
+
+    valueDisplay.innerHTML = `Value: ${formatValue(stat.value, stat.type)} (${stat.type})${changeText}`;
 
     const editBtn = document.createElement("button");
     editBtn.textContent = "Edit";
@@ -353,6 +383,12 @@ if (isEligiblePage()) {
       const newPermanent = permanent || [];
       const newTemps = temps || [];
 
+      // Save current stats as previous for change detection
+      previousStatsData = {
+        permanent: statsData.permanent.map((s) => ({ ...s })),
+        temps: statsData.temps.map((s) => ({ ...s })),
+      };
+
       const now = Date.now();
 
       // Update lastModified for permanent stats
@@ -376,12 +412,6 @@ if (isEligiblePage()) {
           stat.lastModified = prev.lastModified || now;
         }
       });
-
-      // Update previous data
-      previousStatsData = {
-        permanent: newPermanent.map((s) => ({ ...s })),
-        temps: newTemps.map((s) => ({ ...s })),
-      };
 
       statsData = { permanent: newPermanent, temps: newTemps };
       const newHash = JSON.stringify(statsData);
