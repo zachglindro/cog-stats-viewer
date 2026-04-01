@@ -154,17 +154,8 @@ if (isEligiblePage()) {
       debouncedFilter();
     };
 
-    const refreshBtn = document.createElement("button");
-    refreshBtn.textContent = "Refresh";
-    refreshBtn.onclick = loadStats;
-    refreshBtn.style.cssText = `
-    margin-left: 10px;
-    padding: 5px 10px;
-  `;
-
     controls.appendChild(scopeSelect);
     controls.appendChild(sortSelect);
-    controls.appendChild(refreshBtn);
     controls.appendChild(searchInput);
 
     // List container
