@@ -15,8 +15,7 @@ function isEligiblePage() {
   return /^\/(user-contributed\/)?[^\/]+\/$/.test(path);
 }
 
-if (!isEligiblePage()) return;
-
+if (isEligiblePage()) {
 // Inject bridge script
 const bridgeScript = document.createElement('script');
 bridgeScript.src = chrome.runtime.getURL('page-bridge/bridge.js');
@@ -304,3 +303,4 @@ window.addEventListener('message', (event) => {
 // Initialize
 injectButton();
 createPanel();
+}
