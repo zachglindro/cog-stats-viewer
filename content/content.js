@@ -32,7 +32,8 @@ if (isEligiblePage()) {
   let pollingInterval = null;
   let currentSort = "modified-desc"; // name-asc, name-desc, modified-asc, modified-desc
   let previousStatsData = { permanent: [], temps: [] };
-  let changeIndicators = new Map(); // key: scope:key, value: {from: value, type: type}
+  let changeIndicators = new Map(); // key: scope:key, value: {from: value, type: type, timestamp: number}
+  let recentlyChanged = new Set(); // keys that changed in the most recent poll
 
   // Debounce function
   function debounce(func, wait) {
@@ -310,19 +311,24 @@ if (isEligiblePage()) {
 
   function createStatItem(stat) {
     const item = document.createElement("div");
+    const key = `${stat.scope}:${stat.key}`;
+    const isRecentChange = recentlyChanged.has(key);
     item.style.cssText = `
     margin-bottom: 10px;
     padding: 5px;
     border: 1px solid #ddd;
     border-radius: 3px;
-    background: white;
+    background: ${isRecentChange ? "#f0fff0" : "white"};
+    ${isRecentChange ? "border-left: 4px solid #4CAF50;" : ""}
   `;
 
     const label = document.createElement("div");
     label.textContent = `${stat.scope}: ${stat.key}`;
     label.style.fontWeight = "bold";
+    if (isRecentChange) label.style.background = "#f0fff0";
 
     const valueDisplay = document.createElement("div");
+    if (isRecentChange) valueDisplay.style.background = "#f0fff0";
 
     // Find previous value
     let prevValue = null;
@@ -336,7 +342,6 @@ if (isEligiblePage()) {
 
     // Compute change indicator
     let changeText = "";
-    const key = `${stat.scope}:${stat.key}`;
     if (changeIndicators.has(key)) {
       const change = changeIndicators.get(key);
       if (typeof stat.value === "number" && typeof change.from === "number") {
@@ -391,6 +396,7 @@ if (isEligiblePage()) {
         console.error("Stats error:", error);
         return;
       }
+      recentlyChanged.clear(); // Clear previous recent changes
       const newPermanent = permanent || [];
       const newTemps = temps || [];
 
@@ -431,7 +437,12 @@ if (isEligiblePage()) {
           (p) => p.key === stat.key,
         );
         if (prev && prev.value !== stat.value) {
-          changeIndicators.set(key, { from: prev.value, type: prev.type });
+          changeIndicators.set(key, {
+            from: prev.value,
+            type: prev.type,
+            timestamp: Date.now(),
+          });
+          recentlyChanged.add(key);
         }
       });
 
@@ -440,7 +451,12 @@ if (isEligiblePage()) {
         const key = `temporary:${stat.key}`;
         const prev = previousStatsData.temps.find((p) => p.key === stat.key);
         if (prev && prev.value !== stat.value) {
-          changeIndicators.set(key, { from: prev.value, type: prev.type });
+          changeIndicators.set(key, {
+            from: prev.value,
+            type: prev.type,
+            timestamp: Date.now(),
+          });
+          recentlyChanged.add(key);
         }
       });
 
